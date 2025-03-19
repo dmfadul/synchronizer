@@ -2,7 +2,7 @@ import os
 import pytest
 import tempfile
 
-from main import copy_files, delete_files
+from main import sync_folders
 
 
 def test_copy_files():
@@ -13,7 +13,7 @@ def test_copy_files():
         with open(source_file_path, 'w') as f:
             f.write('test')
         
-        copy_files(source, replica)
+        sync_folders(source, replica)
 
         # Perform checks
         assert os.path.exists(replica_file_path)
@@ -30,7 +30,7 @@ def test_inner_folders():
         with open(inner_file, 'w') as f:
             f.write('inner test')
         
-        copy_files(source, replica)
+        sync_folders(source, replica)
 
         # Perform checks
         assert os.path.exists(replica + '/inner_folder')
@@ -45,10 +45,10 @@ def test_delete_files():
         with open(new_file, 'w') as f:
             f.write('new file')
         
-        copy_files(source, replica)
+        sync_folders(source, replica)
         os.remove(new_file)
 
-        delete_files()
+        sync_folders(source, replica)
 
         # Perform checks
         assert not os.path.exists(replica + '/new_file.txt')
