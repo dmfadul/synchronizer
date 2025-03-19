@@ -21,23 +21,22 @@ def gen_logger(path_to_log):
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
 
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
     return logger
 
 
+def get_md5(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
 def files_are_identical(path_file1, path_file2):
-    hash_md5 = hashlib.md5()
-    with open(path_file1, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hash_md5.update(chunk)
-    hash1 = hash_md5.hexdigest()
-
-    hash_md5 = hashlib.md5()
-    with open(path_file2, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            hash_md5.update(chunk)
-    hash2 = hash_md5.hexdigest()
-
-    return hash1 == hash2
+    return get_md5(path_file1) == get_md5(path_file2)
 
 
 def validate_paths(source, replica):
@@ -61,17 +60,12 @@ def validate_paths(source, replica):
     if os.listdir(replica):
         print(f"""The folder '{replica}' is not empty.
               Continuing may cause dataloss in '{replica}'.\n""")
-        response = input("Are you sure you want to continue? (y/N): ")
-        response = response.lower()
+        response = input("Are you sure you want to continue? (y/N): ").strip().lower()
 
         if not response == 'y' and not response == 'yes':
             return "Operation aborted by user."
         
         return 0
-
-
-def validate_log_path(path):
-    return path
 
 
 def sync_folders(path_to_source, path_to_replica, logger):
@@ -136,9 +130,7 @@ if __name__ == '__main__':
     # interval = args.t or 30 # I would prefer that interval were an optional argument, but that may
                               # not be what you want
     
-    path_to_log = validate_log_path(args.log)
-
-    logger = gen_logger(path_to_log)
+    logger = gen_logger(args.log)
     logger.info("Starting Synchronizer")
     logger.info(f"Source: {args.source}")
     logger.info(f"Replica: {args.replica}")
@@ -151,9 +143,12 @@ if __name__ == '__main__':
     
     while True:
         try:
-            sync_folders(args.source, args.replica, logger)
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
+            try:
+                sync_folders(args.source, args.replica, logger)
+            except Exception as e:
+                logger.error(f"An error occurred: {e}")
+            time.sleep(interval)
 
-        time.sleep(interval)
-        
+        except KeyboardInterrupt:
+            logger.info("\nSynchronizer stopped by user. Goodbye!")
+            sys.exit(0)
