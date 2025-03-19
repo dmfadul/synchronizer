@@ -1,9 +1,11 @@
 import os
+import time
 import shutil
 import hashlib
 
 SOURCE = 'source'
 REPLICA = 'replica'
+INTERVAL = 60
 
 
 def files_are_identical(path_file1, path_file2):
@@ -67,4 +69,7 @@ def sync_folders(path_to_source, path_to_replica):
 
 
 if __name__ == '__main__':
-    sync_folders(SOURCE, REPLICA)
+    while True:
+        sync_folders(SOURCE, REPLICA)
+        time.sleep(INTERVAL)
+        
