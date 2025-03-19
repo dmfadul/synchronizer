@@ -142,6 +142,7 @@ if __name__ == '__main__':
         sys.exit(1)
     
     while True:
+        logger.info("Synchronizing...")
         try:
             try:
                 sync_folders(args.source, args.replica, logger)
