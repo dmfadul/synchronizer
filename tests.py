@@ -52,7 +52,25 @@ def test_delete_files():
 
         # Perform checks
         assert not os.path.exists(replica + '/new_file.txt')
+
+
+def test_replace_files():
+    with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as replica:
+        new_file = source + '/new_file.txt'
+        with open(new_file, 'w') as f:
+            f.write('new file')
         
+        sync_folders(source, replica)
+
+        with open(new_file, 'w') as f:
+            f.write('replaced content')
+        
+        sync_folders(source, replica)
+
+        # Perform checks
+        with open(replica + '/new_file.txt', 'r') as f:
+            assert f.read() == 'replaced content'
+
 
 if __name__ == '__main__':
     pytest.main()

@@ -1,8 +1,25 @@
 import os
 import shutil
+import hashlib
 
 SOURCE = 'source'
 REPLICA = 'replica'
+
+
+def files_are_identical(path_file1, path_file2):
+    hash_md5 = hashlib.md5()
+    with open(path_file1, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
+            hash_md5.update(chunk)
+    hash1 = hash_md5.hexdigest()
+
+    hash_md5 = hashlib.md5()
+    with open(path_file2, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b''):
+            hash_md5.update(chunk)
+    hash2 = hash_md5.hexdigest()
+
+    return hash1 == hash2
 
 
 def copy_files(path_to_source, path_to_replica):
@@ -18,6 +35,9 @@ def copy_files(path_to_source, path_to_replica):
             replica_file = os.path.join(folder_in_replica, file)
 
             if not os.path.exists(replica_file):
+                shutil.copy2(source_file, replica_file)
+
+            if not files_are_identical(source_file, replica_file):
                 shutil.copy2(source_file, replica_file)
 
 
