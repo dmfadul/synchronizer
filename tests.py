@@ -2,7 +2,7 @@ import os
 import pytest
 import tempfile
 
-from main import copy_files
+from main import copy_files, delete_files
 
 
 def test_copy_files():
@@ -40,4 +40,19 @@ def test_inner_folders():
 
 
 def test_delete_files():
-    pass
+    with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as replica:
+        new_file = source + '/new_file.txt'
+        with open(new_file, 'w') as f:
+            f.write('new file')
+        
+        copy_files(source, replica)
+        os.remove(new_file)
+
+        delete_files()
+
+        # Perform checks
+        assert not os.path.exists(replica + '/new_file.txt')
+        
+
+if __name__ == '__main__':
+    pytest.main()
