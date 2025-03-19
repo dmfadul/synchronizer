@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import shutil
 import hashlib
@@ -65,6 +66,35 @@ def sync_folders(path_to_source, path_to_replica):
     delete_files(path_to_source, path_to_replica)
 
 
+def validate_paths(source, replica):
+    if not os.path.exists(source):
+        return f"The path {source} does not exist."
+        
+    if not os.path.isdir(source):
+        return f"The path {source} do not point to a folder."
+
+    if source == replica:
+        return "Source and Replica cannot be the same folder."
+
+    if not os.path.exists(replica):
+        try:
+            print(f"creating {replica}")
+            os.mkdir(replica)
+            return 0
+        except Exception as e:
+            return f"Error creating folder at '{replica}': {e}"
+
+    if os.listdir(replica):
+        print(f"""The folder '{replica}' is not empty.
+              Continuing may cause dataloss in '{replica}'.\n""")
+        response = input("Are you sure you want to continue? (y/N): ")
+        response = response.lower()
+
+        if not response == 'y' and not response == 'yes':
+            return "Operation aborted by user."
+        
+        return 0
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('source', help='Path to Source folder')
@@ -73,9 +103,14 @@ if __name__ == '__main__':
     # parser.add_argument('-t', help='Interval in seconds')
     args = parser.parse_args()
 
+    interval = args.interval
     # interval = args.t or 30 # I would prefer that interval were an optional argument, but that may
                               # not be what you want
-    interval = args.interval
+
+    flag = validate_paths(args.source, args.replica)
+    if flag:
+        print(flag)
+        sys.exit(1)
     
     while True:
         sync_folders(args.source, args.replica)
