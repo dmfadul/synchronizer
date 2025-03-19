@@ -2,10 +2,7 @@ import os
 import time
 import shutil
 import hashlib
-
-SOURCE = 'source'
-REPLICA = 'replica'
-INTERVAL = 60
+import argparse
 
 
 def files_are_identical(path_file1, path_file2):
@@ -69,7 +66,18 @@ def sync_folders(path_to_source, path_to_replica):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source', help='Path to Source folder')
+    parser.add_argument('replica', help='Path to Replica folder')
+    parser.add_argument('interval', type=int, help='Interval in seconds')
+    # parser.add_argument('-t', help='Interval in seconds')
+    args = parser.parse_args()
+
+    # interval = args.t or 30 # I would prefer that interval were an optional argument, but that may
+                              # not be what you want
+    interval = args.interval
+    
     while True:
-        sync_folders(SOURCE, REPLICA)
-        time.sleep(INTERVAL)
+        sync_folders(args.source, args.replica)
+        time.sleep(interval)
         
