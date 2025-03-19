@@ -19,7 +19,11 @@ def copy_files(path_to_source, path_to_replica):
 
             if not os.path.exists(replica_file):
                 shutil.copy2(source_file, replica_file)
-                
+
+
+def delete_files():
+    pass
+
 
 if __name__ == '__main__':
     copy_files(SOURCE, REPLICA)
