@@ -3,7 +3,25 @@ import sys
 import time
 import shutil
 import hashlib
+import logging
 import argparse
+
+
+def gen_logger(path_to_log):
+    logger = logging.getLogger('synchronizer')
+    logger.setLevel(logging.INFO)
+
+    fh = logging.FileHandler(path_to_log)
+    fh.setLevel(logging.INFO)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    return logger
 
 
 def files_are_identical(path_file1, path_file2):
@@ -29,6 +47,7 @@ def copy_files(path_to_source, path_to_replica):
 
         if not os.path.exists(folder_in_replica):
             os.makedirs(folder_in_replica)
+            print(f"created {folder_in_replica} folder")
 
         for file in files:
             source_file = os.path.join(root, file)
