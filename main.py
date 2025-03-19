@@ -40,51 +40,6 @@ def files_are_identical(path_file1, path_file2):
     return hash1 == hash2
 
 
-def copy_files(path_to_source, path_to_replica):
-    for root, _, files in os.walk(path_to_source):
-        folder_in_source = os.path.relpath(root, path_to_source)
-        folder_in_replica = os.path.join(path_to_replica, folder_in_source)
-
-        if not os.path.exists(folder_in_replica):
-            os.makedirs(folder_in_replica)
-            print(f"created {folder_in_replica} folder")
-
-        for file in files:
-            source_file = os.path.join(root, file)
-            replica_file = os.path.join(folder_in_replica, file)
-
-            if not os.path.exists(replica_file):
-                shutil.copy2(source_file, replica_file)
-
-            if not files_are_identical(source_file, replica_file):
-                shutil.copy2(source_file, replica_file)
-
-
-def delete_files(path_to_source, path_to_replica):
-    for root, dirs, files in os.walk(path_to_replica, topdown=False):
-        folder_in_replica = os.path.relpath(root, path_to_replica)
-        folder_in_source = os.path.join(path_to_source, folder_in_replica)
-
-        for file in files:
-            replica_file = os.path.join(root, file)
-            source_file = os.path.join(folder_in_source, file)
-
-            if not os.path.exists(source_file):
-                os.remove(replica_file)
-        
-        for dir in dirs:
-            replica_folder = os.path.join(root, dir)
-            source_folder = os.path.join(folder_in_source, dir)
-
-            if not os.path.exists(source_folder):
-                shutil.rmtree(replica_folder)
-
-
-def sync_folders(path_to_source, path_to_replica):
-    copy_files(path_to_source, path_to_replica)
-    delete_files(path_to_source, path_to_replica)
-
-
 def validate_paths(source, replica):
     if not os.path.exists(source):
         return f"The path {source} does not exist."
@@ -114,24 +69,91 @@ def validate_paths(source, replica):
         
         return 0
 
+
+def validate_log_path(path):
+    return path
+
+
+def sync_folders(path_to_source, path_to_replica, logger):
+    copy_files(path_to_source, path_to_replica, logger)
+    delete_files(path_to_source, path_to_replica, logger)
+
+
+def copy_files(path_to_source, path_to_replica, logger):
+    for root, _, files in os.walk(path_to_source):
+        folder_in_source = os.path.relpath(root, path_to_source)
+        folder_in_replica = os.path.join(path_to_replica, folder_in_source)
+
+        if not os.path.exists(folder_in_replica):
+            os.makedirs(folder_in_replica)
+            logger.info(f"created {folder_in_replica} folder")
+
+        for file in files:
+            source_file = os.path.join(root, file)
+            replica_file = os.path.join(folder_in_replica, file)
+
+            if not os.path.exists(replica_file):
+                shutil.copy2(source_file, replica_file)
+                logger.info(f"copied {source_file} to {replica_file}")
+
+            elif not files_are_identical(source_file, replica_file):
+                shutil.copy2(source_file, replica_file)
+                logger.info(f"replaced {replica_file} with {source_file}")
+
+
+def delete_files(path_to_source, path_to_replica, logger):
+    for root, dirs, files in os.walk(path_to_replica, topdown=False):
+        folder_in_replica = os.path.relpath(root, path_to_replica)
+        folder_in_source = os.path.join(path_to_source, folder_in_replica)
+
+        for file in files:
+            replica_file = os.path.join(root, file)
+            source_file = os.path.join(folder_in_source, file)
+
+            if not os.path.exists(source_file):
+                os.remove(replica_file)
+                logger.info(f"deleted {replica_file}")
+        
+        for dir in dirs:
+            replica_folder = os.path.join(root, dir)
+            source_folder = os.path.join(folder_in_source, dir)
+
+            if not os.path.exists(source_folder):
+                shutil.rmtree(replica_folder)
+                logger.info(f"deleted {replica_folder} folder")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('source', help='Path to Source folder')
     parser.add_argument('replica', help='Path to Replica folder')
     parser.add_argument('interval', type=int, help='Interval in seconds')
+    parser.add_argument('log', help='Path to log file')
     # parser.add_argument('-t', help='Interval in seconds')
     args = parser.parse_args()
 
     interval = args.interval
     # interval = args.t or 30 # I would prefer that interval were an optional argument, but that may
                               # not be what you want
+    
+    path_to_log = validate_log_path(args.log)
+
+    logger = gen_logger(path_to_log)
+    logger.info("Starting Synchronizer")
+    logger.info(f"Source: {args.source}")
+    logger.info(f"Replica: {args.replica}")
+    logger.info(f"Interval: {interval} seconds")
 
     flag = validate_paths(args.source, args.replica)
     if flag:
-        print(flag)
+        logger.error(flag)
         sys.exit(1)
     
     while True:
-        sync_folders(args.source, args.replica)
+        try:
+            sync_folders(args.source, args.replica, logger)
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+
         time.sleep(interval)
         
